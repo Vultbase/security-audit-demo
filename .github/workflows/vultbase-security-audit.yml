@@ -26,7 +26,7 @@ jobs:
       - name: Run Vultbase Security Audit
         id: audit
         continue-on-error: true
-        uses: Vultbase/vultbase-action@v1
+        uses: Vultbase/vultbase-action@v1.1
         with:
           api-key: ${{ secrets.VULTBASE_API_KEY }}
           contracts: 'contracts/**/*.sol'
