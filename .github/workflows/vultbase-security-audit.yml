@@ -1,0 +1,62 @@
+name: Vultbase Security Audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/**'
+      - '.vultbase.yml'
+      - '.github/workflows/vultbase-security-audit.yml'
+  pull_request:
+    paths:
+      - 'contracts/**'
+      - '.vultbase.yml'
+      - '.github/workflows/vultbase-security-audit.yml'
+  workflow_dispatch:
+
+jobs:
+  vultbase-audit:
+    name: Vultbase Smart Contract Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Vultbase Security Audit
+        id: audit
+        continue-on-error: true
+        uses: Vultbase/vultbase-action@v1
+        with:
+          api-key: ${{ secrets.VULTBASE_API_KEY }}
+          contracts: 'contracts/**/*.sol'
+          protocol-name: 'security-audit-demo'
+          language: 'solidity'
+          target-chain: 'ethereum'
+          fail-on: 'critical'
+          mode: 'pr'
+          vultbase-url: 'https://www.vultbase.com'
+
+      - name: Print Audit Summary
+        if: always()
+        run: |
+          echo "Job ID:   ${{ steps.audit.outputs.job-id }}"
+          echo "Passed:   ${{ steps.audit.outputs.passed }}"
+          echo "Critical: ${{ steps.audit.outputs.critical-count }}"
+          echo "High:     ${{ steps.audit.outputs.high-count }}"
+          echo "Total:    ${{ steps.audit.outputs.total-findings }}"
+          echo "Report:   ${{ steps.audit.outputs.report-url }}"
+
+      - name: Verify vulnerabilities were detected
+        run: |
+          TOTAL="${{ steps.audit.outputs.total-findings }}"
+          JOB="${{ steps.audit.outputs.job-id }}"
+          if [ -z "$JOB" ] || [ "$JOB" = "" ]; then
+            echo "No job-id — submit failed (check VULTBASE_API_KEY and tier)."
+            exit 1
+          fi
+          if [ "${TOTAL:-0}" -lt 1 ]; then
+            echo "Expected at least one finding for VaultV1.sol; got total=$TOTAL"
+            exit 1
+          fi
+          echo "OK: Vultbase returned $TOTAL finding(s). Audit step may show red if fail-on=critical — that is expected for this demo."
