@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - 'contracts/**'
+      - 'fixtures/**'
       - '.vultbase.yml'
       - '.github/workflows/vultbase-security-audit.yml'
   pull_request:
     paths:
       - 'contracts/**'
+      - 'fixtures/**'
       - '.vultbase.yml'
       - '.github/workflows/vultbase-security-audit.yml'
   workflow_dispatch:
@@ -26,7 +28,7 @@ jobs:
       - name: Run Vultbase Security Audit
         id: audit
         continue-on-error: true
-        uses: Vultbase/vultbase-action@v1.1
+        uses: Vultbase/vultbase-action@v1
         with:
           api-key: ${{ secrets.VULTBASE_API_KEY }}
           contracts: 'contracts/**/*.sol'
@@ -47,16 +49,9 @@ jobs:
           echo "Total:    ${{ steps.audit.outputs.total-findings }}"
           echo "Report:   ${{ steps.audit.outputs.report-url }}"
 
-      - name: Verify vulnerabilities were detected
-        run: |
-          TOTAL="${{ steps.audit.outputs.total-findings }}"
-          JOB="${{ steps.audit.outputs.job-id }}"
-          if [ -z "$JOB" ] || [ "$JOB" = "" ]; then
-            echo "No job-id — submit failed (check VULTBASE_API_KEY and tier)."
-            exit 1
-          fi
-          if [ "${TOTAL:-0}" -lt 1 ]; then
-            echo "Expected at least one finding for VaultV1.sol; got total=$TOTAL"
-            exit 1
-          fi
-          echo "OK: Vultbase returned $TOTAL finding(s). Audit step may show red if fail-on=critical — that is expected for this demo."
+      - name: Assert ground-truth findings (regression)
+        env:
+          JOB_ID: ${{ steps.audit.outputs.job-id }}
+          VULTBASE_API_KEY: ${{ secrets.VULTBASE_API_KEY }}
+          VULTBASE_URL: https://www.vultbase.com
+        run: node fixtures/assert-ground-truth.mjs

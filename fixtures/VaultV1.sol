@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-// Ground truth: vuln-test-v1-reentrancy (see Vultbase/vultbase-action fixtures/GROUND_TRUTH.json)
+// Ground truth: vuln-test-v1-reentrancy (see fixtures/GROUND_TRUTH.json)
 
 contract VaultV1 {
     mapping(address => uint256) public balances;
